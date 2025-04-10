@@ -1,5 +1,4 @@
 ﻿
-using MAgicVilla_VillaAPI.Logging;
 using Serilog;
 
 namespace MAgicVilla_VillaAPI
@@ -24,7 +23,7 @@ namespace MAgicVilla_VillaAPI
             ).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddSingleton<ILogging, LoggingV2>();
+            //builder.Services.AddSingleton<ILogging, LoggingV2>();
 
             var app = builder.Build();
 

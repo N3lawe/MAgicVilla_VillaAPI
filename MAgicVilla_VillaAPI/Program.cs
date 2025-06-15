@@ -1,55 +1,38 @@
-﻿
-using MAgicVilla_VillaAPI.Data;
+﻿using MAgicVilla_VillaAPI.Data;
+using MAgicVilla_VillaAPI.Repository;
+using MAgicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
 
-namespace MAgicVilla_VillaAPI
+namespace MAgicVilla_VillaAPI;
+
+public class Program
 {
-    public class Program
+    public static void Main(string[] args)
     {
-        public static void Main(string[] args)
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddDbContext<ApplicationDbContext>(option => { option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection")); });
+        builder.Services.AddAutoMapper(typeof(MappingConfig));
+        builder.Services.AddScoped<IVillaRepository, VillaRepository>();
+
+
+
+
+        builder.Services.AddControllers().AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+
+        var app = builder.Build();
+        if (app.Environment.IsDevelopment())
         {
-            var builder = WebApplication.CreateBuilder(args);
-
-
-            // add services to the container
-
-            //Log.Logger =new LoggerConfiguration().MinimumLevel.Debug()
-            //    .WriteTo.File("Log/villaLogs.txt", rollingInterval:RollingInterval.Day).CreateLogger();
-
-            //builder.Host.UseSerilog();
-
-            builder.Services.AddDbContext<ApplicationDbContext>(option =>
-            {
-                option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
-            });
-
-            builder.Services.AddControllers(option =>
-            {
-               // option.ReturnHttpNotAcceptable = true;
-            }
-            ).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
-            //builder.Services.AddSingleton<ILogging, LoggingV2>();
-
-            var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
+            app.UseSwagger();
+            app.UseSwaggerUI();
         }
+
+        app.UseHttpsRedirection();
+        app.UseAuthorization();
+        app.MapControllers();
+        app.Run();
     }
 }

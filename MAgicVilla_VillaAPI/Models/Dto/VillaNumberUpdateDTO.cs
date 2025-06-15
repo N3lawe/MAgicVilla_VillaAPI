@@ -1,13 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MAgicVilla_VillaAPI.Models.Dto
+namespace MAgicVilla_VillaAPI.Models.Dto;
+
+public class VillaNumberUpdateDTO
 {
-    public class VillaNumberUpdateDTO
-    {
-        [Required]
-        public int VillaNo { get; set; }
-        [Required]
-        public int VillaID { get; set; }
-        public string SpecialDetails { get; set; }
-    }
+    [Required]
+    public int VillaNo { get; set; }
+    [Required]
+    public int VillaID { get; set; }
+    public string SpecialDetails { get; set; }
 }

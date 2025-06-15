@@ -147,29 +147,22 @@ public class VillaAPIController(IVillaRepository _dbVilla, IMapper _mapper) : Co
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<APIResponse>> UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDTO> patchDTO)
     {
-        try
-        {
-            if (patchDTO == null || id == 0)
-                return BadRequest();
 
-            var villa = await _dbVilla.GetAsync(u => u.Id == id, tracked: false);
-            VillaUpdateDTO villaDTO = _mapper.Map<VillaUpdateDTO>(villa);
+        if (patchDTO == null || id == 0)
+            return BadRequest();
 
-            if (villa == null)
-                return BadRequest();
+        var villa = await _dbVilla.GetAsync(u => u.Id == id, tracked: false);
+        VillaUpdateDTO villaDTO = _mapper.Map<VillaUpdateDTO>(villa);
 
-            patchDTO.ApplyTo(villaDTO, ModelState);
-            Villa Model = _mapper.Map<Villa>(villa);
-            await _dbVilla.UpdateAsync(Model);
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _response.IsSuccess = false;
-            _response.ErrorMessages = new List<string> { ex.Message };
-        }
-        return _response;
+        if (villa == null)
+            return BadRequest();
+
+        patchDTO.ApplyTo(villaDTO, ModelState);
+        Villa Model = _mapper.Map<Villa>(villa);
+        await _dbVilla.UpdateAsync(Model);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+        return NoContent();
+
     }
 }

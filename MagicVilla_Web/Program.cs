@@ -1,3 +1,5 @@
+using MagicVilla_Web.Service;
+using MagicVilla_Web.Service.IService;
 using MAgicVilla_Web;
 
 namespace MagicVilla_Web
@@ -9,6 +11,12 @@ namespace MagicVilla_Web
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddControllersWithViews();
             builder.Services.AddAutoMapper(typeof(MappingConfig));
+
+            builder.Services.AddHttpClient<IVillaService, VillaService>();
+            builder.Services.AddScoped<IVillaService, VillaService>();
+
+
+
             var app = builder.Build();
 
             if (!app.Environment.IsDevelopment())

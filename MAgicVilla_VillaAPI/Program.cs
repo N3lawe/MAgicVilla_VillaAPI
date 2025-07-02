@@ -1,8 +1,10 @@
 ﻿using MAgicVilla_VillaAPI;
 using MAgicVilla_VillaAPI.Data;
+using MAgicVilla_VillaAPI.Models;
 using MAgicVilla_VillaAPI.Repository;
 using MAgicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -23,7 +25,9 @@ internal class Program
         #endregion
 
         #region Configure Dependency Injection
-        //builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
+        builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
         builder.Services.AddScoped<IVillaRepository, VillaRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();

@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore;
 namespace MAgicVilla_VillaAPI.Data;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
+
+    public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+
+    public DbSet<LocalUser> LocalUsers { get; set; }
     public DbSet<Villa> Villas { get; set; }
     public DbSet<VillaNumber> VillaNumbers { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)

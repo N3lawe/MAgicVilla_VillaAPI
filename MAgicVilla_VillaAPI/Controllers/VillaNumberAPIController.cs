@@ -1,25 +1,41 @@
-﻿using System.Net;
-using AutoMapper;
+﻿using AutoMapper;
 using MAgicVilla_VillaAPI.Models;
 using MAgicVilla_VillaAPI.Models.Dto;
 using MAgicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace MAgicVilla_VillaAPI.Controllers;
 
 [Route("api/v{version:apiVersion}/VillaNumberAPI")]
 [ApiController]
 [ApiVersion("1.0")]
-public class VillaNumberAPIController(IVillaNumberRepository _dbVillaNumber, IVillaRepository _dbVilla, IMapper _mapper) : ControllerBase
+
+public class VillaNumberAPIController : ControllerBase
 {
-    protected APIResponse _response = new();
+    protected APIResponse _response;
+    private readonly IVillaNumberRepository _dbVillaNumber;
+    private readonly IVillaRepository _dbVilla;
+    private readonly IMapper _mapper;
+    public VillaNumberAPIController(IVillaNumberRepository dbVillaNumber, IMapper mapper,
+        IVillaRepository dbVilla)
+    {
+        _dbVillaNumber = dbVillaNumber;
+        _mapper = mapper;
+        _response = new();
+        _dbVilla = dbVilla;
+    }
+
 
     [HttpGet("GetString")]
-    public IEnumerable<string> Get() => new string[] { "String1", "string2" };
-
+    public IEnumerable<string> Get()
+    {
+        return new string[] { "String1", "string2" };
+    }
 
     [HttpGet]
+    //[MapToApiVersion("1.0")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<APIResponse>> GetVillaNumbers()
     {
@@ -74,7 +90,6 @@ public class VillaNumberAPIController(IVillaNumberRepository _dbVillaNumber, IVi
         }
         return _response;
     }
-
     [Authorize(Roles = "admin")]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -116,7 +131,6 @@ public class VillaNumberAPIController(IVillaNumberRepository _dbVillaNumber, IVi
         }
         return _response;
     }
-
     [Authorize(Roles = "admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -148,7 +162,6 @@ public class VillaNumberAPIController(IVillaNumberRepository _dbVillaNumber, IVi
         }
         return _response;
     }
-
     [Authorize(Roles = "admin")]
     [HttpPut("{id:int}", Name = "UpdateVillaNumber")]
     [ProducesResponseType(StatusCodes.Status200OK)]

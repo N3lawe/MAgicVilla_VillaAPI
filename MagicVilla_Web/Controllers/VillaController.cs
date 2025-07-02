@@ -74,6 +74,7 @@ namespace MagicVilla_Web.Controllers
             TempData["error"] = "Error encountered.";
             return View(model);
         }
+
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> DeleteVilla(int villaId)
         {
@@ -85,12 +86,12 @@ namespace MagicVilla_Web.Controllers
             }
             return NotFound();
         }
+
         [Authorize(Roles = "admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteVilla(VillaDTO model)
         {
-
             var response = await _villaService.DeleteAsync<APIResponse>(model.Id, HttpContext.Session.GetString(SD.SessionToken));
             if (response != null && response.IsSuccess)
             {
@@ -100,6 +101,5 @@ namespace MagicVilla_Web.Controllers
             TempData["error"] = "Error encountered.";
             return View(model);
         }
-
     }
 }

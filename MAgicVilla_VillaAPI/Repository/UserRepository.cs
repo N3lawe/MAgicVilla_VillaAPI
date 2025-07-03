@@ -9,111 +9,105 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace MAgicVilla_VillaAPI.Repository
+namespace MAgicVilla_VillaAPI.Repository;
+public class UserRepository : IUserRepository
 {
-    public class UserRepository : IUserRepository
+    private readonly ApplicationDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
+    private string secretKey;
+    private readonly IMapper _mapper;
+    public UserRepository(ApplicationDbContext db, IConfiguration configuration,
+        UserManager<ApplicationUser> userManager, IMapper mapper, RoleManager<IdentityRole> roleManager)
     {
-        private readonly ApplicationDbContext _db;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private string secretKey;
-        private readonly IMapper _mapper;
-
-        public UserRepository(ApplicationDbContext db, IConfiguration configuration,
-            UserManager<ApplicationUser> userManager, IMapper mapper, RoleManager<IdentityRole> roleManager)
+        _db = db;
+        _mapper = mapper;
+        _userManager = userManager;
+        secretKey = configuration.GetValue<string>("ApiSettings:Secret");
+        _roleManager = roleManager;
+    }
+    public bool IsUniqueUser(string username)
+    {
+        var user = _db.ApplicationUsers.FirstOrDefault(x => x.UserName == username);
+        if (user == null)
         {
-            _db = db;
-            _mapper = mapper;
-            _userManager = userManager;
-            secretKey = configuration.GetValue<string>("ApiSettings:Secret");
-            _roleManager = roleManager;
+            return true;
+        }
+        return false;
+    }
+    public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
+    {
+        var user = _db.ApplicationUsers
+            .FirstOrDefault(u => u.UserName.ToLower() == loginRequestDTO.UserName.ToLower());
+
+        bool isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
+
+
+        if (user == null || isValid == false)
+        {
+            return new LoginResponseDTO()
+            {
+                Token = "",
+                User = null
+            };
         }
 
-        public bool IsUniqueUser(string username)
+        var roles = await _userManager.GetRolesAsync(user);
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(secretKey);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
-            var user = _db.ApplicationUsers.FirstOrDefault(x => x.UserName == username);
-            if (user == null)
+            Subject = new ClaimsIdentity(new Claim[]
             {
-                return true;
-            }
-            return false;
-        }
+                new Claim(ClaimTypes.Name, user.UserName.ToString()),
+                new Claim(ClaimTypes.Role, roles.FirstOrDefault())
+            }),
+            Expires = DateTime.UtcNow.AddDays(7),
+            SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
 
-        public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        LoginResponseDTO loginResponseDTO = new LoginResponseDTO()
         {
-            var user = _db.ApplicationUsers
-                .FirstOrDefault(u => u.UserName.ToLower() == loginRequestDTO.UserName.ToLower());
+            Token = tokenHandler.WriteToken(token),
+            User = _mapper.Map<UserDTO>(user),
 
-            bool isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
-
-
-            if (user == null || isValid == false)
-            {
-                return new LoginResponseDTO()
-                {
-                    Token = "",
-                    User = null
-                };
-            }
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(secretKey);
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Name, user.UserName.ToString()),
-                    new Claim(ClaimTypes.Role, roles.FirstOrDefault())
-                }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            LoginResponseDTO loginResponseDTO = new LoginResponseDTO()
-            {
-                Token = tokenHandler.WriteToken(token),
-                User = _mapper.Map<UserDTO>(user),
-
-            };
-            return loginResponseDTO;
-        }
-
-        public async Task<UserDTO> Register(RegisterationRequestDTO registerationRequestDTO)
+        };
+        return loginResponseDTO;
+    }
+    public async Task<UserDTO> Register(RegisterationRequestDTO registerationRequestDTO)
+    {
+        ApplicationUser user = new()
         {
-            ApplicationUser user = new()
-            {
-                UserName = registerationRequestDTO.UserName,
-                Email = registerationRequestDTO.UserName,
-                NormalizedEmail = registerationRequestDTO.UserName.ToUpper(),
-                Name = registerationRequestDTO.Name
-            };
+            UserName = registerationRequestDTO.UserName,
+            Email = registerationRequestDTO.UserName,
+            NormalizedEmail = registerationRequestDTO.UserName.ToUpper(),
+            Name = registerationRequestDTO.Name
+        };
 
-            try
+        try
+        {
+            var result = await _userManager.CreateAsync(user, registerationRequestDTO.Password);
+            if (result.Succeeded)
             {
-                var result = await _userManager.CreateAsync(user, registerationRequestDTO.Password);
-                if (result.Succeeded)
+                if (!_roleManager.RoleExistsAsync("admin").GetAwaiter().GetResult())
                 {
-                    if (!_roleManager.RoleExistsAsync("admin").GetAwaiter().GetResult())
-                    {
-                        await _roleManager.CreateAsync(new IdentityRole("admin"));
-                        await _roleManager.CreateAsync(new IdentityRole("customer"));
-                    }
-                    await _userManager.AddToRoleAsync(user, "admin");
-                    var userToReturn = _db.ApplicationUsers
-                        .FirstOrDefault(u => u.UserName == registerationRequestDTO.UserName);
-                    return _mapper.Map<UserDTO>(userToReturn);
-
+                    await _roleManager.CreateAsync(new IdentityRole("admin"));
+                    await _roleManager.CreateAsync(new IdentityRole("customer"));
                 }
-            }
-            catch (Exception e)
-            {
+                await _userManager.AddToRoleAsync(user, "admin");
+                var userToReturn = _db.ApplicationUsers
+                    .FirstOrDefault(u => u.UserName == registerationRequestDTO.UserName);
+                return _mapper.Map<UserDTO>(userToReturn);
 
             }
-
-            return new UserDTO();
         }
+        catch (Exception e)
+        {
+
+        }
+
+        return new UserDTO();
     }
 }

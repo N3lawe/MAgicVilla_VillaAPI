@@ -3,38 +3,36 @@ using MagicVilla_Web.Models;
 using MagicVilla_Web.Models.Dto;
 using MagicVilla_Web.Service.IService;
 
-namespace MagicVilla_Web.Service
+namespace MagicVilla_Web.Service;
+public class AuthService : BaseService, IAuthService
 {
-    public class AuthService : BaseService, IAuthService
+    private readonly IHttpClientFactory _clientFactory;
+    private string villaUrl;
+
+    public AuthService(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
     {
-        private readonly IHttpClientFactory _clientFactory;
-        private string villaUrl;
+        _clientFactory = clientFactory;
+        villaUrl = configuration.GetValue<string>("ServiceUrls:VillaAPI");
 
-        public AuthService(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
+    }
+
+    public Task<T> LoginAsync<T>(LoginRequestDTO obj)
+    {
+        return SendAsync<T>(new APIRequest()
         {
-            _clientFactory = clientFactory;
-            villaUrl = configuration.GetValue<string>("ServiceUrls:VillaAPI");
+            ApiType = SD.ApiType.POST,
+            Data = obj,
+            Url = villaUrl + "/api/v1/UsersAuth/login"
+        });
+    }
 
-        }
-
-        public Task<T> LoginAsync<T>(LoginRequestDTO obj)
+    public Task<T> RegisterAsync<T>(RegisterationRequestDTO obj)
+    {
+        return SendAsync<T>(new APIRequest()
         {
-            return SendAsync<T>(new APIRequest()
-            {
-                ApiType = SD.ApiType.POST,
-                Data = obj,
-                Url = villaUrl + "/api/v1/UsersAuth/login"
-            });
-        }
-
-        public Task<T> RegisterAsync<T>(RegisterationRequestDTO obj)
-        {
-            return SendAsync<T>(new APIRequest()
-            {
-                ApiType = SD.ApiType.POST,
-                Data = obj,
-                Url = villaUrl + "/api/v1/UsersAuth/register"
-            });
-        }
+            ApiType = SD.ApiType.POST,
+            Data = obj,
+            Url = villaUrl + "/api/v1/UsersAuth/register"
+        });
     }
 }

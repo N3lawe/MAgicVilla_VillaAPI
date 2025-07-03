@@ -9,82 +9,107 @@ using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace MagicVilla_Web.Controllers
+namespace MagicVilla_Web.Controllers;
+public class AuthController : Controller
 {
-    public class AuthController : Controller
+    private readonly IAuthService _authService;
+    public AuthController(IAuthService authService)
     {
-        private readonly IAuthService _authService;
-        public AuthController(IAuthService authService)
-        {
-            _authService = authService;
-        }
+        _authService = authService;
+    }
 
-        [HttpGet]
-        public IActionResult Login()
-        {
-            LoginRequestDTO obj = new();
+    [HttpGet]
+    public IActionResult Login()
+    {
+        return View(new LoginRequestDTO());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Login(LoginRequestDTO obj)
+    {
+        if (!ModelState.IsValid)
             return View(obj);
-        }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginRequestDTO obj)
+        APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
+
+        if (response != null && response.IsSuccess)
         {
-            APIResponse response = await _authService.LoginAsync<APIResponse>(obj);
-            if (response != null && response.IsSuccess)
+            var modelJson = Convert.ToString(response.Result);
+            if (string.IsNullOrEmpty(modelJson))
             {
-                LoginResponseDTO model = JsonConvert.DeserializeObject<LoginResponseDTO>(Convert.ToString(response.Result));
-
-                var handler = new JwtSecurityTokenHandler();
-                var jwt = handler.ReadJwtToken(model.Token);
-
-                var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
-                identity.AddClaim(new Claim(ClaimTypes.Name, jwt.Claims.FirstOrDefault(u => u.Type == "name").Value));
-                identity.AddClaim(new Claim(ClaimTypes.Role, jwt.Claims.FirstOrDefault(u => u.Type == "role").Value));
-                var principal = new ClaimsPrincipal(identity);
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-
-
-                HttpContext.Session.SetString(SD.SessionToken, model.Token);
-                return RedirectToAction("Index", "Home");
-            }
-            else
-            {
-                ModelState.AddModelError("CustomError", response.ErrorMessages.FirstOrDefault());
+                ModelState.AddModelError("CustomError", "Login failed: Empty token.");
                 return View(obj);
             }
-        }
 
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
+            LoginResponseDTO model = JsonConvert.DeserializeObject<LoginResponseDTO>(modelJson);
 
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(model.Token);
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterationRequestDTO obj)
-        {
-            APIResponse result = await _authService.RegisterAsync<APIResponse>(obj);
-            if (result != null && result.IsSuccess)
-            {
-                return RedirectToAction("Login");
-            }
-            return View();
-        }
+            var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
 
+            var nameClaim = jwt.Claims.FirstOrDefault(c => c.Type == "name");
+            var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == "role");
 
-        public async Task<IActionResult> Logout()
-        {
-            await HttpContext.SignOutAsync();
-            HttpContext.Session.SetString(SD.SessionToken, "");
+            if (nameClaim != null)
+                identity.AddClaim(new Claim(ClaimTypes.Name, nameClaim.Value));
+
+            if (roleClaim != null)
+                identity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            HttpContext.Session.SetString(SD.SessionToken, model.Token);
+
             return RedirectToAction("Index", "Home");
         }
-
-        public IActionResult AccessDenied()
+        else
         {
-            return View();
+            var errorMsg = response?.ErrorMessages?.FirstOrDefault() ?? "Login failed.";
+            ModelState.AddModelError("CustomError", errorMsg);
+            return View(obj);
         }
+    }
+
+    [HttpGet]
+    public IActionResult Register()
+    {
+        return View(new RegisterationRequestDTO());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(RegisterationRequestDTO obj)
+    {
+        if (!ModelState.IsValid)
+            return View(obj);
+
+        APIResponse result = await _authService.RegisterAsync<APIResponse>(obj);
+
+        if (result != null && result.IsSuccess)
+        {
+            return RedirectToAction("Login");
+        }
+        else
+        {
+            var errorMsg = result?.ErrorMessages?.FirstOrDefault() ?? "Registration failed.";
+            ModelState.AddModelError("CustomError", errorMsg);
+            return View(obj);
+        }
+    }
+
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync();
+        HttpContext.Session.Remove(SD.SessionToken);
+        return RedirectToAction("Index", "Home");
+    }
+
+    public IActionResult AccessDenied()
+    {
+        return View();
     }
 }

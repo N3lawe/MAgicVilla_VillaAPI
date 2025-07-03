@@ -2,15 +2,16 @@
 using MAgicVilla_VillaAPI.Repository.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+
 namespace MAgicVilla_VillaAPI.Repository;
 public class Repository<T> : IRepository<T> where T : class
 {
     private readonly ApplicationDbContext _db;
     internal DbSet<T> dbSet;
+
     public Repository(ApplicationDbContext db)
     {
         _db = db;
-        //_db.VillaNumbers.Include(u => u.Villa).ToList();
         this.dbSet = _db.Set<T>();
     }
 
@@ -20,26 +21,28 @@ public class Repository<T> : IRepository<T> where T : class
         await SaveAsync();
     }
 
-    //"Villa,VillaSpecial"
     public async Task<T> GetAsync(Expression<Func<T, bool>> filter = null, bool tracked = true, string? includeProperties = null)
     {
         IQueryable<T> query = dbSet;
+
         if (!tracked)
         {
             query = query.AsNoTracking();
         }
+
         if (filter != null)
         {
             query = query.Where(filter);
         }
 
-        if (includeProperties != null)
+        if (!string.IsNullOrWhiteSpace(includeProperties))
         {
             foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
             {
-                query = query.Include(includeProp);
+                query = query.Include(includeProp.Trim());
             }
         }
+
         return await query.FirstOrDefaultAsync();
     }
 
@@ -51,24 +54,23 @@ public class Repository<T> : IRepository<T> where T : class
         {
             query = query.Where(filter);
         }
-        if (pageSize > 0)
-        {
-            if (pageSize > 100)
-            {
-                pageSize = 100;
-            }
-            //skip0.take(5)
-            //page number- 2     || page size -5
-            //skip(5*(1)) take(5)
-            query = query.Skip(pageSize * (pageNumber - 1)).Take(pageSize);
-        }
-        if (includeProperties != null)
+
+        if (!string.IsNullOrWhiteSpace(includeProperties))
         {
             foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
             {
-                query = query.Include(includeProp);
+                query = query.Include(includeProp.Trim());
             }
         }
+
+        if (pageSize > 0 && pageNumber > 0)
+        {
+            if (pageSize > 100) pageSize = 100;
+
+            int skip = pageSize * (pageNumber - 1);
+            query = query.Skip(skip).Take(pageSize);
+        }
+
         return await query.ToListAsync();
     }
 
@@ -82,6 +84,4 @@ public class Repository<T> : IRepository<T> where T : class
     {
         await _db.SaveChangesAsync();
     }
-
-
 }

@@ -4,7 +4,6 @@ using MagicVilla_Web.Models.Dto;
 using MagicVilla_Web.Service.IService;
 
 namespace MagicVilla_Web.Service;
-
 public class VillaService : BaseService, IVillaService
 {
     private readonly IHttpClientFactory _clientFactory;

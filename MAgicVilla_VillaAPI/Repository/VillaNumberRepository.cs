@@ -3,7 +3,6 @@ using MAgicVilla_VillaAPI.Models;
 using MAgicVilla_VillaAPI.Repository.IRepository;
 
 namespace MAgicVilla_VillaAPI.Repository;
-
 public class VillaNumberRepository : Repository<VillaNumber>, IVillaNumberRepository
 {
     private readonly ApplicationDbContext _db;
@@ -11,8 +10,6 @@ public class VillaNumberRepository : Repository<VillaNumber>, IVillaNumberReposi
     {
         _db = db;
     }
-
-
     public async Task<VillaNumber> UpdateAsync(VillaNumber entity)
     {
         entity.UpdatedDate = DateTime.Now;

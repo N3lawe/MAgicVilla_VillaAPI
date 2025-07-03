@@ -11,16 +11,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
-internal class Program
+public class Program
 {
-    private static void Main(string[] args)
+    public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
         #region Configure Database
-        builder.Services.AddDbContext<ApplicationDbContext>(option =>
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
-            option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
         });
         #endregion
 
@@ -28,17 +28,20 @@ internal class Program
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+
         builder.Services.AddResponseCaching();
         builder.Services.AddScoped<IVillaRepository, VillaRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
         builder.Services.AddAutoMapper(typeof(MappingConfig));
+
         builder.Services.AddApiVersioning(options =>
         {
             options.AssumeDefaultVersionWhenUnspecified = true;
             options.DefaultApiVersion = new ApiVersion(1, 0);
             options.ReportApiVersions = true;
         });
+
         builder.Services.AddVersionedApiExplorer(options =>
         {
             options.GroupNameFormat = "'v'VVV";
@@ -48,16 +51,16 @@ internal class Program
 
         #region Configure Authentication (JWT)
         var key = builder.Configuration.GetValue<string>("ApiSettings:Secret");
-        builder.Services.AddAuthentication(x =>
+        builder.Services.AddAuthentication(options =>
         {
-            x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
-        .AddJwtBearer(x =>
+        .AddJwtBearer(options =>
         {
-            x.RequireHttpsMetadata = false;
-            x.SaveToken = true;
-            x.TokenValidationParameters = new TokenValidationParameters
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
@@ -70,7 +73,7 @@ internal class Program
         #region Configure Controllers
         builder.Services.AddControllers(options =>
         {
-            options.CacheProfiles.Add("Default30", new CacheProfile() { Duration = 30 });
+            options.CacheProfiles.Add("Default30", new CacheProfile { Duration = 30 });
         })
         .AddNewtonsoftJson()
         .AddXmlDataContractSerializerFormatters();
@@ -82,9 +85,10 @@ internal class Program
         {
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Description = "Enter 'Bearer' [space] and your token.",
+                Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"Bearer abc123\"",
                 Name = "Authorization",
                 In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer"
             });
 
@@ -93,10 +97,14 @@ internal class Program
                 {
                     new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
-                        Scheme = "oauth2",
-                        Name = "Bearer",
-                        In = ParameterLocation.Header
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        },
+                        Scheme = "Bearer",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
                     },
                     new List<string>()
                 }
@@ -110,19 +118,17 @@ internal class Program
             });
         });
         #endregion
-
         var app = builder.Build();
 
         #region Configure Middleware
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI(options =>
+            app.UseSwaggerUI(c =>
             {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_Villa API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic Villa API v1");
             });
         }
-
         app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();

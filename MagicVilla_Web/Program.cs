@@ -21,8 +21,9 @@ namespace MagicVilla_Web
             builder.Services.AddHttpClient<IVillaNumberService, VillaNumberService>();
             builder.Services.AddScoped<IVillaNumberService, VillaNumberService>();
             builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            //builder.Services.AddHttpClient<IAuthService, AuthService>();
-            //builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddHttpClient<IAuthService, AuthService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddDistributedMemoryCache();
             builder.Services.AddDistributedMemoryCache();
             builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                           .AddCookie(options =>
@@ -53,6 +54,7 @@ namespace MagicVilla_Web
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
+
             app.UseSession();
             app.MapControllerRoute(
                 name: "default",

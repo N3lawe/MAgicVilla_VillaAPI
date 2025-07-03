@@ -28,10 +28,22 @@ internal class Program
         builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
+        builder.Services.AddResponseCaching();
         builder.Services.AddScoped<IVillaRepository, VillaRepository>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IVillaNumberRepository, VillaNumberRepository>();
         builder.Services.AddAutoMapper(typeof(MappingConfig));
+        builder.Services.AddApiVersioning(options =>
+        {
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.ReportApiVersions = true;
+        });
+        builder.Services.AddVersionedApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV";
+            options.SubstituteApiVersionInUrl = true;
+        });
         #endregion
 
         #region Configure Authentication (JWT)

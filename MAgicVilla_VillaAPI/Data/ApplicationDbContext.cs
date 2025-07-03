@@ -1,9 +1,13 @@
 ﻿using MAgicVilla_VillaAPI.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 namespace MAgicVilla_VillaAPI.Data;
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
-
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : base(options)
+    {
+    }
     public DbSet<ApplicationUser> ApplicationUsers { get; set; }
 
     public DbSet<LocalUser> LocalUsers { get; set; }

@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 namespace MagicVilla_Web.Controllers;
 public class VillaController(IVillaService _villaService, IMapper _mapper) : Controller
 {
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> IndexVilla()
     {
         List<VillaDTO> list = new();

@@ -1,6 +1,6 @@
 ﻿@model MagicVilla_Web.Models.Dto.LoginRequestDTO
 
-<form method="post" novalidate>
+<form method="post">
     <div class="container border p-4 mt-5 shadow-sm rounded" style="max-width: 500px;">
         <h2 class="text-center mb-4">Login</h2>
 
@@ -14,7 +14,7 @@
 
         <div class="mb-3">
             <label asp-for="Password" class="form-label"></label>
-            <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" />
+            <input asp-for="Password" type="password" class="form-control" required placeholder="Enter password" />
             <span asp-validation-for="Password" class="text-danger"></span>
         </div>
 

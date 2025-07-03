@@ -83,7 +83,8 @@ public class UserRepository : IUserRepository
             UserName = registerationRequestDTO.UserName,
             Email = registerationRequestDTO.UserName,
             NormalizedEmail = registerationRequestDTO.UserName.ToUpper(),
-            Name = registerationRequestDTO.Name
+            Name = registerationRequestDTO.Name,
+            PasswordHash = registerationRequestDTO.Password,
         };
 
         try
